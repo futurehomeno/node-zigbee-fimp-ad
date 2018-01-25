@@ -1,0 +1,33 @@
+{
+  "name": "zigbee-fimp-ad",
+  "version": "1.0.0",
+  "description": "TI CC253X ZNP Fimp adapter . The package exposes Zigbee devices over FIMP",
+  "main": "server.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/futurehomeno/node-zigbee-fimp-ad.git"
+  },
+  "keywords": [
+    "zigbee",
+    "CC253X",
+    "fimp",
+    "adapter"
+  ],
+  "author": "aleksandrs@futurehome.no",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/futurehomeno/node-zigbee-fimp-ad/issues"
+  },
+  "homepage": "https://github.com/futurehomeno/node-zigbee-fimp-ad#readme",
+  "dependencies": {
+    "mqtt": "^2.15.1",
+    "zigbee-shepherd": "^0.3.0"
+  }
+}
