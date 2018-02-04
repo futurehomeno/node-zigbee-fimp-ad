@@ -1,8 +1,8 @@
 var ZShepherd = require('zigbee-shepherd');
-var zserver = new ZShepherd('/dev/tty.usbmodem14211',{dbPath:"./database/dev.db"});
+var zserver = new ZShepherd('/dev/ttyACM0',{dbPath:"./database/dev.db"});
 var mqtt = require('mqtt')
 options = {clientId:"zigbee-ad-1",username:"",password:"",protocolVersion: 4}
-var client  = mqtt.connect('mqtt://localhost:1883',options)
+var client  = mqtt.connect('mqtt://cube.local:1883',options)
 var counter = 0;
 var utils  = require("./lib/utils.js")
 
@@ -14,6 +14,12 @@ zserver.on('ready', function () {
     // zserver.permitJoin(40);
     console.log(zserver.list());
     console.log("Device info:")
+    zserver.list().forEach(function(dev){
+        if (dev.type === 'EndDevice')
+            console.log(dev.ieeeAddr + ' ' + dev.nwkAddr + ' ' + dev.modelId);
+        if (dev.manufId === 4151) // set all xiaomi devices to be online, so shepherd won't try to query info from devices (which would fail because they go tosleep)
+            zserver.find(dev.ieeeAddr,1).getDevice().update({ status: 'online', joinTime: Math.floor(Date.now()/1000) });
+    });
 });
 
 client.on('connect', function () {
@@ -251,7 +257,7 @@ zserver.on('ind', function (msg) {
                     reportPresence(msg.endpoints[0].getNwkAddr(),msg.endpoints[0].epId,val);
                     setTimeout(function(){
                         reportPresence(msg.endpoints[0].getNwkAddr(),msg.endpoints[0].epId,false);
-                    }, 5000,false);
+                    }, 60000,false);
                     break;
                 case 'genOnOff':
                     if (msg.data.data.onOff!=undefined) {
