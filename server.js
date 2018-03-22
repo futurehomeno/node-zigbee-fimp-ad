@@ -57,7 +57,30 @@ client.on('message', function (topic, message) {
         epId = Number(addrSplit[1]);
         ctrlBinarySwitch(devId,epId,msgObj.val);
 
-    } else {
+    } else if (msgObj.serv=="out_lvl_switch") {
+        fimpAddr = utils.NewFimpAddressFromString(topic)
+        console.log(fimpAddr);
+        addrSplit =  fimpAddr.serviceAddress.split("_");
+        devId = Number(addrSplit[0]);
+        epId = Number(addrSplit[1]);
+        
+        switch (msgObj.type){
+            case "cmd.binary.set":
+                ctrlBinarySwitch(devId,epId,msgObj.val);
+                reportLevelBinSwitch(devId,epId,msgObj.val);
+                break;
+            case "cmd.lvl.set":
+                duration = 0
+                if (msgObj.props.duration != undefined ) {
+                    duration = Number(msgObj.props.duration)    
+                }
+                ctrlLevelSwitch(devId,epId,msgObj.val,duration);
+                break;
+            default:
+                console.log("Unsupported FIMP command")        
+        }
+        
+    }else {
         console.log("Unsupported FIMP service")
     }
     
@@ -148,6 +171,27 @@ function ctrlBinarySwitch(devId,epId,value) {
 
 }
 
+function ctrlLevelSwitch(devId,epId,value,duration) {
+    // devId = devId+0;
+    console.log("devId = "+devId);
+    console.log("epId = "+epId);
+
+    var ep = zserver.find(devId, epId);
+    if (ep == undefined) {
+        console.log("Device is not found by the address. Skipp");
+        return;
+    }
+    console.log("ep = "+ep);
+    ep.functional('genLevelCtrl', "moveToLevel", {"level":(value*2.5),"transtime":duration }, function (err, rsp) {
+        if (!err)
+            console.log("Cmd response :"+rsp);
+        else 
+            console.log("Err:",err);    
+    });
+    reportLevelSwitch(devId,epId,value);
+
+}
+
 function reportBinarySwitch(devId,epId,value) {
     addr = devId+"_"+epId
     payload = {
@@ -160,6 +204,33 @@ function reportBinarySwitch(devId,epId,value) {
         "val_t": "bool"
       }
     client.publish('pt:j1/mt:evt/rt:dev/rn:zigbee/ad:1/sv:out_bin_switch/ad:'+addr, JSON.stringify(payload));
+}
+
+function reportLevelSwitch(devId,epId,value) {
+    addr = devId+"_"+epId
+    payload = {
+        "ctime": "2018-01-24T20:07:54+0100",
+        "props": {},
+        "serv": "out_lvl_switch",
+        "tags": [],
+        "type": "evt.lvl.report",
+        "val": value,
+        "val_t": "int"
+      }
+    client.publish('pt:j1/mt:evt/rt:dev/rn:zigbee/ad:1/sv:out_lvl_switch/ad:'+addr, JSON.stringify(payload));
+}
+function reportLevelBinSwitch(devId,epId,value) {
+    addr = devId+"_"+epId
+    payload = {
+        "ctime": "2018-01-24T20:07:54+0100",
+        "props": {},
+        "serv": "out_lvl_switch",
+        "tags": [],
+        "type": "evt.binary.report",
+        "val": value,
+        "val_t": "bool"
+      }
+    client.publish('pt:j1/mt:evt/rt:dev/rn:zigbee/ad:1/sv:out_lvl_switch/ad:'+addr, JSON.stringify(payload));
 }
 
 function reportPresence(devId,epId,value) {
@@ -228,9 +299,9 @@ zserver.on('ind', function (msg) {
     switch (msg.type) {
         case 'devIncoming':
             console.log('Device: ' + msg.data + ' joining the network!');
-            // msg.endpoints.forEach(function (ep) {
-            //     console.log(ep.dump());  // endpoint information
-            // });
+            msg.endpoints.forEach(function (ep) {
+                console.log(ep.dump());  // endpoint information
+            });
             console.log(msg);
             sendInclusionReport(msg.data);   
             break;
