@@ -79,7 +79,12 @@ client.on('message', function (topic, message) {
             default:
                 console.log("Unsupported FIMP command")        
         }
-        
+    }else if(msgObj.serv=="meter") {
+        fimpAddr = utils.NewFimpAddressFromString(topic)
+        addrSplit =  fimpAddr.serviceAddress.split("_");
+        devId = Number(addrSplit[0]);
+        epId = Number(addrSplit[1]);
+        getMeterProfileInfo(devId,epId,msgObj.val);   
     }else {
         console.log("Unsupported FIMP service")
     }
@@ -189,6 +194,23 @@ function ctrlLevelSwitch(devId,epId,value,duration) {
             console.log("Err:",err);    
     });
     reportLevelSwitch(devId,epId,value);
+    
+}
+
+function getMeterProfileInfo(devId,epId,attrName) {
+    var ep = zserver.find(devId, epId);
+    ep.read('haElectricalMeasurement', attrName, function (err, data) {
+        if (!err)
+            console.log(" EMI Cmd response :"+ JSON.stringify(data,null,2));
+        else 
+            console.log("EMI Err:",err);  
+    });
+    // ep.functional('haElectricalMeasurement', "getMeasurementProfile", {}, function (err, rsp) {
+    //     if (!err)
+    //         console.log(" EMI Cmd response :"+ JSON.stringify(rsp,null,2));
+    //     else 
+    //         console.log("EMI Err:",err);    
+    // });
 
 }
 
